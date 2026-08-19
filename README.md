@@ -42,40 +42,108 @@ ffmpeg n'est pas requis (aucun remux — les flux sont relayés tels quels).
 
 ## Installation pas à pas
 
+Fonctionne sur **macOS, Linux et Windows**. Les étapes 1, 2, 6 et 7 sont identiques partout ; les étapes 3 à 5 (yt-dlp, PostgreSQL, configuration) sont détaillées par plateforme.
+
+> 💡 **Utilisateurs Windows** : vous pouvez suivre ce guide directement sous Windows (PowerShell) — ou via [WSL2](https://learn.microsoft.com/windows/wsl/install) où les instructions Linux s'appliquent telles quelles. Les commandes shell ci-dessous sont en syntaxe Unix ; l'équivalent PowerShell est indiqué quand il diffère (`cp` → `copy`, etc.).
+
+### 1. Cloner et installer les dépendances (toutes plateformes)
+
 ```bash
-# 1. Cloner et installer les dépendances
 git clone https://github.com/trafalgarLaw20/french-stream-scraper.git
 cd french-stream-scraper
 npm install
+```
 
-# 2. Installer le navigateur headless utilisé par le scraper
+### 2. Installer le navigateur du scraper (toutes plateformes)
+
+```bash
 npx playwright install chromium
+```
 
-# 3. (Recommandé) installer yt-dlp pour la résolution des flux
-brew install yt-dlp        # macOS
-# ou : pip install -U yt-dlp / pipx install yt-dlp
-yt-dlp --version           # vérifier
+**Linux uniquement** — si Chromium ne se lance pas au premier scrape, installez les bibliothèques système (une seule fois, peut nécessiter sudo) :
 
-# 4. Créer la base PostgreSQL (exemple macOS/Homebrew)
+```bash
+npx playwright install-deps chromium
+# équivalent manuel (Debian/Ubuntu) :
+# sudo apt install libnss3 libnspr4 libatk1.0-0 libatk-bridge2.0-0 libcups2 \
+#   libdrm2 libxkbcommon0 libxcomposite1 libxdamage1 libxfixes3 libxrandr2 \
+#   libgbm1 libasound2 libpango-1.0-0 libcairo2
+```
+
+### 3. Installer yt-dlp (recommandé)
+
+C'est le seul moyen fiable de résoudre les hébergeurs propriétaires (Dood, Voe…). Sans lui, le scraper replie sur l'interception réseau (couverture plus faible).
+
+| Plateforme | Commande |
+|---|---|
+| **macOS** | `brew install yt-dlp` |
+| **Linux (Debian/Ubuntu)** | `sudo apt install yt-dlp` *(si le paquet est ancien, préférez pip)* |
+| **Linux (universel)** | `pipx install yt-dlp` ou `python3 -m pip install --user yt-dlp` |
+| **Windows (PowerShell)** | `winget install yt-dlp.yt-dlp` — ou téléchargez [`yt-dlp.exe`](https://github.com/yt-dlp/yt-dlp/releases/latest) et placez-le dans le `PATH` |
+
+Vérifier ensuite : `yt-dlp --version` (doit afficher un numéro de version depuis n'importe quel terminal).
+
+### 4. Installer PostgreSQL et créer la base
+
+**macOS (Homebrew)** :
+
+```bash
+brew install postgresql@16
+brew services start postgresql@16
 createdb fss
-#    — ou via psql :
-#    psql -c "CREATE DATABASE fss;"
+```
 
-# 5. Configurer l'environnement
-cp .env.example .env
-#    → éditer .env : au minimum DATABASE_URL
-#    (ex. local sans mot de passe : postgres://VOTRE_USER@localhost:5432/fss)
+**Linux (Debian/Ubuntu)** :
 
-# 6. Appliquer les migrations Drizzle
+```bash
+sudo apt install postgresql
+sudo systemctl enable --now postgresql
+sudo -u postgres createdb fss
+# autoriser votre utilisateur Linux sur la base (auth peer) :
+sudo -u postgres psql -c "CREATE ROLE \"$USER\" LOGIN;" 2>/dev/null || true
+```
+
+**Windows** :
+
+1. Installez PostgreSQL via [l'installateur officiel](https://www.postgresql.org/download/windows/) (EDB) — notez le mot de passe du superutilisateur `postgres` choisi pendant l'installation.
+2. Ouvrez **SQL Shell (psql)** (menu Démarrer) ou mettez `C:\Program Files\PostgreSQL\16\bin` dans le `PATH`, puis :
+
+```powershell
+psql -U postgres -c "CREATE DATABASE fss;"
+```
+
+### 5. Configurer l'environnement
+
+```bash
+cp .env.example .env        # macOS / Linux
+copy .env.example .env      # Windows (PowerShell)
+```
+
+Éditez `.env` — au minimum `DATABASE_URL` :
+
+| Plateforme | Exemple de DATABASE_URL |
+|---|---|
+| macOS (Homebrew) | `postgres://VOTRE_USER_MAC@localhost:5432/fss` — votre nom d'utilisateur macOS (`whoami`), généralement sans mot de passe |
+| Linux (auth peer) | `postgres://VOTRE_USER_LINUX@localhost:5432/fss` (souvent sans mot de passe en local) |
+| Windows | `postgres://postgres:VOTRE_MOT_DE_PASSE@localhost:5432/fss` — le mot de passe choisi pendant l'installateur PostgreSQL |
+
+### 6. Appliquer les migrations Drizzle (toutes plateformes)
+
+```bash
 npm run db:migrate
+```
 
-# 7. Lancer 🚀
-npm run dev                # mode dev : UI sur http://localhost:5173, API sur :3000
+### 7. Lancer 🚀
+
+```bash
+npm run dev                              # mode dev : UI sur http://localhost:5173, API sur :3000
 # ou
-npm run build:web && npm run ui   # mode prod locale : tout sur http://127.0.0.1:3000
+npm run build:web && npm run ui          # mode prod locale : tout sur http://127.0.0.1:3000
 ```
 
 Ouvrez ensuite l'interface : `http://127.0.0.1:3000` (ou `http://localhost:5173` en mode dev).
+
+> **Note Windows** : le projet dépend de `better-sqlite3` (historique UI) — des binaires précompilés sont fournis pour Windows, aucune toolchain C++ n'est normalement nécessaire. Si `npm install` échoue sur ce module, installez [Visual Studio Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/) (charge de travail « Desktop development with C++ ») puis relancez `npm install`.
 
 ### Premiers pas suggérés
 
