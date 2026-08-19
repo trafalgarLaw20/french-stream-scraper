@@ -1,0 +1,11 @@
+[Unit]
+Description=French Stream Scraper — backup quotidien PostgreSQL
+Requires=fss-backup.service
+
+[Timer]
+# Tous les jours à 02:00 (avant les jobs cron du scheduler qui démarrent à 03:00).
+OnCalendar=*-*-* 02:00:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

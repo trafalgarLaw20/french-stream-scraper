@@ -1,0 +1,48 @@
+[Unit]
+Description=French Stream Scraper (UI + API + scheduler)
+Documentation=file:///opt/fss/ARCHITECTURE.md
+After=network-online.target postgresql.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=fss
+Group=fss
+WorkingDirectory=/opt/fss
+EnvironmentFile=/opt/fss/.env
+Environment=NODE_ENV=production
+
+# Resolve tsx from project node_modules (avoid global install assumptions).
+# ExecStart points to the compiled server entry — we use tsx for runtime TSX.
+ExecStart=/opt/fss/node_modules/.bin/tsx server/src/server.ts
+
+# Auto-restart on crash (backoff 10s, no spam).
+Restart=on-failure
+RestartSec=10
+StartLimitBurst=5
+StartLimitIntervalSec=300
+
+# Logging → journald.
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=fss
+
+# Hardening de base.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/fss/data /var/log/fss
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+
+# Limites mémoire (Playwright + Node).
+MemoryHigh=4G
+MemoryMax=6G
+LimitNOFILE=4096
+
+[Install]
+WantedBy=multi-user.target
