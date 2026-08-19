@@ -63,7 +63,13 @@ npx playwright install chromium
 **Linux uniquement** — si Chromium ne se lance pas au premier scrape, installez les bibliothèques système (une seule fois, peut nécessiter sudo) :
 
 ```bash
+# Debian/Ubuntu (automatique) :
 npx playwright install-deps chromium
+
+# Arch Linux & dérivées (pacman — npx playwright install-deps ne gère pas pacman) :
+sudo pacman -S --needed nss atk at-spi2-atk cups libdrm libxkbcommon \
+  libxcomposite libxdamage libxfixes libxrandr mesa alsa-lib pango cairo
+
 # équivalent manuel (Debian/Ubuntu) :
 # sudo apt install libnss3 libnspr4 libatk1.0-0 libatk-bridge2.0-0 libcups2 \
 #   libdrm2 libxkbcommon0 libxcomposite1 libxdamage1 libxfixes3 libxrandr2 \
@@ -78,6 +84,8 @@ C'est le seul moyen fiable de résoudre les hébergeurs propriétaires (Dood, Vo
 |---|---|
 | **macOS** | `brew install yt-dlp` |
 | **Linux (Debian/Ubuntu)** | `sudo apt install yt-dlp` *(si le paquet est ancien, préférez pip)* |
+| **Linux (Arch & dérivées — Manjaro, EndeavourOS, Garuda…)** | `sudo pacman -S yt-dlp` |
+| **Linux (Fedora/RHEL)** | `sudo dnf install yt-dlp` |
 | **Linux (universel)** | `pipx install yt-dlp` ou `python3 -m pip install --user yt-dlp` |
 | **Windows (PowerShell)** | `winget install yt-dlp.yt-dlp` — ou téléchargez [`yt-dlp.exe`](https://github.com/yt-dlp/yt-dlp/releases/latest) et placez-le dans le `PATH` |
 
@@ -97,6 +105,18 @@ createdb fss
 
 ```bash
 sudo apt install postgresql
+sudo systemctl enable --now postgresql
+sudo -u postgres createdb fss
+# autoriser votre utilisateur Linux sur la base (auth peer) :
+sudo -u postgres psql -c "CREATE ROLE \"$USER\" LOGIN;" 2>/dev/null || true
+```
+
+**Linux (Arch & dérivées — Manjaro, EndeavourOS…)** :
+
+```bash
+sudo pacman -S postgresql
+# Sur Arch, la base doit être initialisée avant le premier démarrage :
+sudo -u postgres initdb -D /var/lib/postgres/data
 sudo systemctl enable --now postgresql
 sudo -u postgres createdb fss
 # autoriser votre utilisateur Linux sur la base (auth peer) :
@@ -124,7 +144,7 @@ copy .env.example .env      # Windows (PowerShell)
 | Plateforme | Exemple de DATABASE_URL |
 |---|---|
 | macOS (Homebrew) | `postgres://VOTRE_USER_MAC@localhost:5432/fss` — votre nom d'utilisateur macOS (`whoami`), généralement sans mot de passe |
-| Linux (auth peer) | `postgres://VOTRE_USER_LINUX@localhost:5432/fss` (souvent sans mot de passe en local) |
+| Linux (Debian/Ubuntu/Arch — auth peer) | `postgres://VOTRE_USER_LINUX@localhost:5432/fss` (souvent sans mot de passe en local) |
 | Windows | `postgres://postgres:VOTRE_MOT_DE_PASSE@localhost:5432/fss` — le mot de passe choisi pendant l'installateur PostgreSQL |
 
 ### 6. Appliquer les migrations Drizzle (toutes plateformes)
